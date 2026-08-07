@@ -1,0 +1,229 @@
+import { useState } from "react";
+import { api } from "../api.js";
+import { useLang } from "../context/LangContext.jsx";
+
+export default function Admin() {
+  const { t } = useLang();
+
+  // step 1: create quiz
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [language, setLanguage] = useState("en");
+  const [quiz, setQuiz] = useState(null);
+  const [quizStatus, setQuizStatus] = useState(null);
+
+  // step 2: questions built up locally, one "current" question in progress
+  const [questions, setQuestions] = useState([]);
+  const [qText, setQText] = useState("");
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [optText, setOptText] = useState("");
+  const [optCorrect, setOptCorrect] = useState(false);
+  const [status, setStatus] = useState(null);
+
+  // step 3: publish
+  const [published, setPublished] = useState(false);
+
+  async function handleCreateQuiz(e) {
+    e.preventDefault();
+    setQuizStatus(null);
+    try {
+      const created = await api.createQuiz({ title, description, language });
+      setQuiz(created);
+      setQuizStatus({ ok: true, msg: `Quiz created (id: ${created.id ?? "?"})` });
+    } catch (err) {
+      setQuizStatus({ ok: false, msg: err.message });
+    }
+  }
+
+  async function handleAddQuestion(e) {
+    e.preventDefault();
+    setStatus(null);
+    try {
+      const created = await api.addQuestion(quiz.id, { text: qText });
+      setCurrentQuestion(created);
+      setQuestions((prev) => [...prev, created]);
+      setQText("");
+      setStatus({ ok: true, msg: "Question added — now add its options below." });
+    } catch (err) {
+      setStatus({ ok: false, msg: err.message });
+    }
+  }
+
+  async function handleAddOption(e) {
+    e.preventDefault();
+    setStatus(null);
+    try {
+      await api.addOption(currentQuestion.id, {
+        text: optText,
+        is_correct: optCorrect,
+      });
+      setOptText("");
+      setOptCorrect(false);
+      setStatus({ ok: true, msg: "Option added." });
+    } catch (err) {
+      setStatus({ ok: false, msg: err.message });
+    }
+  }
+
+  async function handlePublish() {
+    setStatus(null);
+    try {
+      await api.publishQuiz(quiz.id);
+      setPublished(true);
+      setStatus({ ok: true, msg: t.published });
+    } catch (err) {
+      setStatus({ ok: false, msg: err.message });
+    }
+  }
+
+  return (
+    <div className="container">
+      <div className="page-head">
+        <h1 className="page-title">{t.admin}</h1>
+      </div>
+
+      <div className="admin-wrap">
+        {/* Step 1 */}
+        <div className="panel">
+          <h2 className="panel-title">
+            <span className="tag">1</span> {t.createQuiz}
+          </h2>
+          {!quiz ? (
+            <form onSubmit={handleCreateQuiz}>
+              <div className="field">
+                <label>{t.title}</label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label>{t.description}</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label>{t.language}</label>
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                >
+                  <option value="en">English</option>
+                  <option value="ru">Русский</option>
+                  <option value="uz">O'zbek</option>
+                </select>
+              </div>
+              <button className="btn btn-gold" type="submit">
+                {t.create}
+              </button>
+            </form>
+          ) : (
+            <p className="admin-status ok">
+              "{quiz.title || title}" — id: {quiz.id ?? "?"}
+            </p>
+          )}
+          {quizStatus && (
+            <p className={"admin-status " + (quizStatus.ok ? "ok" : "err")}>
+              {quizStatus.msg}
+            </p>
+          )}
+        </div>
+
+        {/* Step 2 */}
+        {quiz && (
+          <div className="panel">
+            <h2 className="panel-title">
+              <span className="tag">2</span> {t.addQuestion}
+            </h2>
+
+            {questions.length > 0 && (
+              <ul className="list-plain">
+                {questions.map((q) => (
+                  <li key={q.id}>{q.text}</li>
+                ))}
+              </ul>
+            )}
+
+            <form onSubmit={handleAddQuestion}>
+              <div className="field">
+                <label>{t.questionText}</label>
+                <input
+                  type="text"
+                  value={qText}
+                  onChange={(e) => setQText(e.target.value)}
+                  required
+                />
+              </div>
+              <button className="btn btn-ghost" type="submit">
+                {t.add}
+              </button>
+            </form>
+
+            {currentQuestion && (
+              <div style={{ marginTop: 20 }}>
+                <h3
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 13,
+                    color: "var(--muted)",
+                    marginBottom: 10,
+                  }}
+                >
+                  {t.addOption} — "{currentQuestion.text}"
+                </h3>
+                <form onSubmit={handleAddOption}>
+                  <div className="option-input-row">
+                    <input
+                      type="text"
+                      placeholder={t.optionText}
+                      value={optText}
+                      onChange={(e) => setOptText(e.target.value)}
+                      required
+                    />
+                    <label className="checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={optCorrect}
+                        onChange={(e) => setOptCorrect(e.target.checked)}
+                      />
+                      {t.correct}
+                    </label>
+                    <button className="btn btn-ghost" type="submit">
+                      {t.add}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {status && (
+              <p className={"admin-status " + (status.ok ? "ok" : "err")}>
+                {status.msg}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Step 3 */}
+        {quiz && questions.length > 0 && (
+          <div className="panel">
+            <h2 className="panel-title">
+              <span className="tag">3</span> {t.publish}
+            </h2>
+            <button
+              className="btn btn-gold"
+              onClick={handlePublish}
+              disabled={published}
+            >
+              {published ? t.published : t.publish}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
