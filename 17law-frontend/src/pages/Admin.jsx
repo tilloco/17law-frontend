@@ -9,6 +9,8 @@ export default function Admin() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [language, setLanguage] = useState("en");
+  const [category, setCategory] = useState("civil");
+  const [difficulty, setDifficulty] = useState("easy");
   const [quiz, setQuiz] = useState(null);
   const [quizStatus, setQuizStatus] = useState(null);
 
@@ -18,6 +20,7 @@ export default function Admin() {
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [optText, setOptText] = useState("");
   const [optCorrect, setOptCorrect] = useState(false);
+  const [optionCount, setOptionCount] = useState(0);
   const [status, setStatus] = useState(null);
 
   // step 3: publish
@@ -27,7 +30,11 @@ export default function Admin() {
     e.preventDefault();
     setQuizStatus(null);
     try {
-      const created = await api.createQuiz({ title, description, language });
+      const created = await api.createQuiz({
+        category,
+        difficulty,
+        translations: [{ language_code: language, title, description }],
+      });
       setQuiz(created);
       setQuizStatus({ ok: true, msg: `Quiz created (id: ${created.id ?? "?"})` });
     } catch (err) {
@@ -39,10 +46,17 @@ export default function Admin() {
     e.preventDefault();
     setStatus(null);
     try {
-      const created = await api.addQuestion(quiz.id, { text: qText });
-      setCurrentQuestion(created);
-      setQuestions((prev) => [...prev, created]);
+      const created = await api.addQuestion(quiz.id, {
+        order_index: questions.length,
+        points: 1,
+        translations: [{ language_code: language, question_text: qText }],
+      });
+      // backend only returns { id }, so we keep the text locally for display
+      const withText = { id: created.id, text: qText };
+      setCurrentQuestion(withText);
+      setQuestions((prev) => [...prev, withText]);
       setQText("");
+      setOptionCount(0);
       setStatus({ ok: true, msg: "Question added — now add its options below." });
     } catch (err) {
       setStatus({ ok: false, msg: err.message });
@@ -54,9 +68,11 @@ export default function Admin() {
     setStatus(null);
     try {
       await api.addOption(currentQuestion.id, {
-        text: optText,
+        order_index: optionCount,
         is_correct: optCorrect,
+        translations: [{ language_code: language, option_text: optText }],
       });
+      setOptionCount((prev) => prev + 1);
       setOptText("");
       setOptCorrect(false);
       setStatus({ ok: true, msg: "Option added." });
@@ -106,16 +122,41 @@ export default function Admin() {
                   onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
-              <div className="field">
-                <label>{t.language}</label>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                >
-                  <option value="en">English</option>
-                  <option value="ru">Русский</option>
-                  <option value="uz">O'zbek</option>
-                </select>
+              <div className="inline-row">
+                <div className="field" style={{ flex: 1 }}>
+                  <label>{t.language}</label>
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                  >
+                    <option value="en">English</option>
+                    <option value="ru">Русский</option>
+                    <option value="uz">O'zbek</option>
+                  </select>
+                </div>
+                <div className="field" style={{ flex: 1 }}>
+                  <label>Category</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                  >
+                    <option value="civil">Civil</option>
+                    <option value="criminal">Criminal</option>
+                    <option value="constitutional">Constitutional</option>
+                    <option value="administrative">Administrative</option>
+                  </select>
+                </div>
+                <div className="field" style={{ flex: 1 }}>
+                  <label>Difficulty</label>
+                  <select
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value)}
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
               </div>
               <button className="btn btn-gold" type="submit">
                 {t.create}

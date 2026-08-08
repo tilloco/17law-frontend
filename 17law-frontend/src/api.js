@@ -33,6 +33,19 @@ async function request(path, options = {}) {
   }
 }
 
+// The backend sends `liked_by_me` / `like_count`, but the quiz list/detail
+// UI was built expecting `liked` / `likes_count`. Normalized here so we
+// only have to fix it in one place instead of every component that reads
+// a quiz object.
+function normalizeQuiz(q) {
+  if (!q) return q;
+  return {
+    ...q,
+    liked: q.liked_by_me ?? q.liked ?? false,
+    likes_count: q.like_count ?? q.likes_count ?? 0,
+  };
+}
+
 export const api = {
   // -- auth --
   googleSignIn: (idToken) =>
@@ -44,8 +57,12 @@ export const api = {
   logout: () => request("/auth/logout", { method: "POST" }),
 
   // -- quizzes --
-  listQuizzes: () => request("/quizzes"),
-  getQuiz: (id) => request(`/quizzes/${id}`),
+  listQuizzes: async () => {
+    const data = await request("/quizzes");
+    const list = Array.isArray(data) ? data : data?.quizzes || [];
+    return list.map(normalizeQuiz);
+  },
+  getQuiz: async (id) => normalizeQuiz(await request(`/quizzes/${id}`)),
   submitAttempt: (id, answers) =>
     request(`/quizzes/${id}/attempt`, {
       method: "POST",
@@ -53,6 +70,11 @@ export const api = {
     }),
   likeQuiz: (id) => request(`/quizzes/${id}/like`, { method: "POST" }),
   unlikeQuiz: (id) => request(`/quizzes/${id}/like`, { method: "DELETE" }),
+
+  // -- my dashboard (stats + history) --
+  myStats: () => request("/me/stats"),
+  myAttempts: (limit) =>
+    request(`/me/attempts${limit ? `?limit=${limit}` : ""}`),
 
   // -- admin --
   createQuiz: (payload) =>
@@ -72,4 +94,9 @@ export const api = {
     }),
   publishQuiz: (quizId) =>
     request(`/admin/quizzes/${quizId}/publish`, { method: "POST" }),
+  adminStats: () => request("/admin/stats"),
+  adminListUsers: () => request("/admin/users"),
+  adminListQuizzes: () => request("/admin/quizzes"),
+  adminDeleteQuiz: (id) =>
+    request(`/admin/quizzes/${id}`, { method: "DELETE" }),
 };
