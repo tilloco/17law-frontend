@@ -82,6 +82,22 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+    uploadMaterial: (formData) =>
+    fetch(`${API_BASE}/admin/materials`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    }).then(async (res) => {
+      if (!res.ok) {
+        let message = `Request failed (${res.status})`;
+        try {
+          const data = await res.json();
+          message = data.error || data.message || message;
+        } catch {}
+        throw new Error(message);
+      }
+      return res.json();
+    }),
   addQuestion: (quizId, payload) =>
     request(`/admin/quizzes/${quizId}/questions`, {
       method: "POST",

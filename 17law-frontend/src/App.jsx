@@ -5,6 +5,7 @@ import Quizzes from "./pages/Quizzes.jsx";
 import QuizTake from "./pages/QuizTake.jsx";
 import Admin from "./pages/Admin.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import AdminMaterials from "./pages/AdminMaterials.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 import { useLang } from "./context/LangContext.jsx";
 
@@ -39,18 +40,26 @@ export default function App() {
           }
         />
         <Route
-  path="/dashboard"
-  element={
-    <RequireAuth>
-      <Dashboard />
-    </RequireAuth>
-  }
-/>
+          path="/dashboard"
+          element={
+            <RequireAuth>
+              <Dashboard />
+            </RequireAuth>
+          }
+        />
         <Route
           path="/admin"
           element={
             <RequireAuth>
               <Admin />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin/materials"
+          element={
+            <RequireAuth>
+              <AdminMaterials />
             </RequireAuth>
           }
         />
