@@ -58,7 +58,7 @@ export default function Navbar() {
               {t.quizzes}
             </Link>
           )}
-          {user && (
+          {user && user.role === "admin" && (
             <Link
               to="/admin"
               className={
