@@ -6,7 +6,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 async function request(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
-    credentials: "include", // sends/receives the session cookie
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -33,10 +33,6 @@ async function request(path, options = {}) {
   }
 }
 
-// The backend sends `liked_by_me` / `like_count`, but the quiz list/detail
-// UI was built expecting `liked` / `likes_count`. Normalized here so we
-// only have to fix it in one place instead of every component that reads
-// a quiz object.
 function normalizeQuiz(q) {
   if (!q) return q;
   return {
@@ -82,7 +78,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-    uploadMaterial: (formData) =>
+  uploadMaterial: (formData) =>
     fetch(`${API_BASE}/admin/materials`, {
       method: "POST",
       credentials: "include",
@@ -97,6 +93,11 @@ export const api = {
         throw new Error(message);
       }
       return res.json();
+    }),
+  createCourse: (payload) =>
+    request("/admin/courses", {
+      method: "POST",
+      body: JSON.stringify(payload),
     }),
   addQuestion: (quizId, payload) =>
     request(`/admin/quizzes/${quizId}/questions`, {

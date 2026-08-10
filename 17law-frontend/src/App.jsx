@@ -7,6 +7,7 @@ import Admin from "./pages/Admin.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import AdminMaterials from "./pages/AdminMaterials.jsx";
 import Settings from "./pages/Settings.jsx";
+import TeacherPanel from "./pages/TeacherPanel.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 import { useLang } from "./context/LangContext.jsx";
 
@@ -69,6 +70,14 @@ export default function App() {
           element={
             <RequireAuth>
               <Settings />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/teacher"
+          element={
+            <RequireAuth>
+              <TeacherPanel />
             </RequireAuth>
           }
         />
